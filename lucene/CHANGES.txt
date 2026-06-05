@@ -383,6 +383,9 @@ Improvements
 
 * GITHUB#16144: Clarify LeafCollector batch collection scoring contract. (Costin Leau)
 
+* GITHUB#12892: Remove usage of deprecated IndexSearcher#search(Query,Collector) from
+  QueryUtils in the test framework. (Luca Cavanna)
+
 Optimizations
 ---------------------
 * GITHUB#16176: Restore WANDScorer for TOP_SCORES + minShouldMatch > 1. (Tianxiao Wei)
