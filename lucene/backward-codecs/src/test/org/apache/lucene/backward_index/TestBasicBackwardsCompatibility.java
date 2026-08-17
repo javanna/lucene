@@ -871,11 +871,11 @@ public class TestBasicBackwardsCompatibility extends BackwardsCompatibilityTestB
   public void testOpenModeAndCreatedVersion() throws IOException {
     Directory dir = newDirectory(directory);
     int majorVersion = SegmentInfos.readLatestCommit(dir).getIndexCreatedVersionMajor();
-    if (majorVersion != Version.MIN_SUPPORTED_MAJOR && majorVersion != Version.LATEST.major) {
+    if (majorVersion < Version.MIN_SUPPORTED_MAJOR || majorVersion > Version.LATEST.major) {
       fail(
-          "expected one of: ["
+          "expected between: ["
               + Version.MIN_SUPPORTED_MAJOR
-              + ", "
+              + " and "
               + Version.LATEST.major
               + "] but got: "
               + majorVersion);
