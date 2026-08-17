@@ -34,6 +34,111 @@ public final class Version {
   /**
    * @deprecated Use latest
    */
+  @Deprecated public static final Version LUCENE_9_0_0 = new Version(9, 0, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_1_0 = new Version(9, 1, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_2_0 = new Version(9, 2, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_3_0 = new Version(9, 3, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_4_0 = new Version(9, 4, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_4_1 = new Version(9, 4, 1);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_4_2 = new Version(9, 4, 2);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_5_0 = new Version(9, 5, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_6_0 = new Version(9, 6, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_7_0 = new Version(9, 7, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_8_0 = new Version(9, 8, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_9_0 = new Version(9, 9, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_9_1 = new Version(9, 9, 1);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_9_2 = new Version(9, 9, 2);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_10_0 = new Version(9, 10, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_11_0 = new Version(9, 11, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_11_1 = new Version(9, 11, 1);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_12_0 = new Version(9, 12, 0);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_12_1 = new Version(9, 12, 1);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_12_2 = new Version(9, 12, 2);
+
+  /**
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_9_12_3 = new Version(9, 12, 3);
+
+  /**
+   * @deprecated Use latest
+   */
   @Deprecated public static final Version LUCENE_10_0_0 = new Version(10, 0, 0);
 
   /**
