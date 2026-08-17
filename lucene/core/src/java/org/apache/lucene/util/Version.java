@@ -195,7 +195,7 @@ public final class Version {
    *
    * @since 11.0.0
    */
-  public static final int MIN_SUPPORTED_MAJOR = 10;
+  public static final int MIN_SUPPORTED_MAJOR = 9;
 
   /**
    * @see #getPackageImplementationVersion()
