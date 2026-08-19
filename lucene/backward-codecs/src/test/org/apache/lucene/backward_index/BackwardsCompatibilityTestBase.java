@@ -88,7 +88,8 @@ public abstract class BackwardsCompatibilityTestBase extends LuceneTestCase {
     for (String version : OLD_VERSIONS) {
       try {
         Version v = Version.parse(version);
-        assertTrue("Unsupported binary version: " + v, v.major >= Version.MIN_SUPPORTED_MAJOR - 1);
+        assertTrue(
+            "Unsupported binary version: " + v, v.major >= Version.MIN_BINARY_SUPPORTED_MAJOR);
         binaryVersions.add(v);
       } catch (ParseException ex) {
         throw new RuntimeException(ex);
