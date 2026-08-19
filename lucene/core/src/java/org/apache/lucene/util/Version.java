@@ -303,6 +303,24 @@ public final class Version {
   public static final int MIN_SUPPORTED_MAJOR = 9;
 
   /**
+   * The minimum major version that can be read via the expert-API read-only path (e.g. {@code
+   * StandardDirectoryReader.open(commit, minSupportedMajor, executor)} and {@code
+   * SegmentInfos.readLatestCommit(dir, minSupportedMajor)}).
+   *
+   * <p>This constant is pinned to the previous major at the time its index zip files and codec
+   * support were collected. It must be set explicitly rather than derived from {@link
+   * #MIN_SUPPORTED_MAJOR} arithmetically, so that it remains stable when {@link
+   * #MIN_SUPPORTED_MAJOR} is bumped for a new major release.
+   *
+   * <p><b>When to update:</b> When {@link #MIN_SUPPORTED_MAJOR} is bumped, set this constant to the
+   * old value of {@link #MIN_SUPPORTED_MAJOR} and add the corresponding index zip files and codec
+   * support to the backward-codecs module.
+   *
+   * @since 11.0.0
+   */
+  public static final int MIN_BINARY_SUPPORTED_MAJOR = 9;
+
+  /**
    * @see #getPackageImplementationVersion()
    */
   @SuppressWarnings("NonFinalStaticField")

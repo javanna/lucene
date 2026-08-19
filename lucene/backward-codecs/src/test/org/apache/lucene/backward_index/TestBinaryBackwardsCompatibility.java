@@ -29,9 +29,22 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Version;
 
+/**
+ * Tests for the binary backwards-compatibility (read-only expert-API) path, covering index versions
+ * in the range [{@link Version#MIN_BINARY_SUPPORTED_MAJOR}, {@link Version#MIN_SUPPORTED_MAJOR}).
+ *
+ * <p>This class is dormant whenever the two constants are equal — {@link
+ * BackwardsCompatibilityTestBase#BINARY_SUPPORTED_VERSIONS} is empty, no test instances are
+ * created, and the {@code @Nightly} methods below do not run.
+ *
+ * <p>It reactivates automatically when {@link Version#MIN_SUPPORTED_MAJOR} is bumped for a new
+ * major release while {@link Version#MIN_BINARY_SUPPORTED_MAJOR} is kept at the previous value:
+ * versions from {@code versions.txt} whose major falls in that gap populate {@link
+ * BackwardsCompatibilityTestBase#BINARY_SUPPORTED_VERSIONS} and these tests exercise the read-only
+ * expert-API path for those indexes.
+ */
 public class TestBinaryBackwardsCompatibility extends BackwardsCompatibilityTestBase {
 
-  static final int MIN_BINARY_SUPPORTED_MAJOR = Version.MIN_SUPPORTED_MAJOR - 1;
   static final String INDEX_NAME = "unsupported";
   static final String SUFFIX_CFS = "-cfs";
   static final String SUFFIX_NO_CFS = "-nocfs";
@@ -64,7 +77,7 @@ public class TestBinaryBackwardsCompatibility extends BackwardsCompatibilityTest
   public void testReadNMinusTwoCommit() throws IOException {
     try (BaseDirectoryWrapper dir = newDirectory(directory)) {
       IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
-      StandardDirectoryReader.open(commit, MIN_BINARY_SUPPORTED_MAJOR, null).close();
+      StandardDirectoryReader.open(commit, Version.MIN_BINARY_SUPPORTED_MAJOR, null).close();
     }
   }
 
@@ -74,13 +87,13 @@ public class TestBinaryBackwardsCompatibility extends BackwardsCompatibilityTest
       expectThrows(
           IndexFormatTooOldException.class,
           () -> SegmentInfos.readLatestCommit(dir, Version.MIN_SUPPORTED_MAJOR));
-      SegmentInfos.readLatestCommit(dir, MIN_BINARY_SUPPORTED_MAJOR);
+      SegmentInfos.readLatestCommit(dir, Version.MIN_BINARY_SUPPORTED_MAJOR);
     }
   }
 
   @Nightly
   public void testSearchOldIndex() throws Exception {
     TestBasicBackwardsCompatibility.searchIndex(
-        directory, indexPattern, MIN_BINARY_SUPPORTED_MAJOR, version);
+        directory, indexPattern, Version.MIN_BINARY_SUPPORTED_MAJOR, version);
   }
 }
