@@ -228,9 +228,137 @@ Automaton dfa = Operations.determinize(WildcardQuery.toAutomaton(new Term("myfie
 Query query = new AutomatonQuery(new Term("myfield", pattern), dfa);
 ```
 
+The same change made `QueryVisitor.consumeTermsMatching` take
+`Supplier<ByteRunnable>` instead of `ByteRunAutomaton`, so visitors can run a DFA
+or an NFA. `ByteRunAutomaton` still implements `ByteRunnable`.
+
 ### CollectionStatistics and TermStatistics have been renamed to FieldStats and TermStats (GITHUB#15929)
 
 Corresponding methods and parameters have been renamed accordingly.
+
+### RegExp optional complement syntax has been removed (GITHUB#15750)
+
+The `~` complement syntax (`RegExp.DEPRECATED_COMPLEMENT`) was removed. Use a
+character-class negation (`[^...]`) instead. `RegExp.ALL` no longer includes that
+flag. This was already noted under “Migration from Lucene 9.x to Lucene 10.0”
+as `(LUCENE-11)`; the removal shipped in 11.0.
+
+### `PriorityQueue` now takes a `LessThan` (GITHUB#14873)
+
+The one-arg constructor and overridable `lessThan` method were removed
+([GITHUB#14871](https://github.com/apache/lucene/pull/14871),
+[GITHUB#14873](https://github.com/apache/lucene/pull/14873)). Pass a
+`PriorityQueue.LessThan` into the constructor. Named subclasses that still
+need heap access pass `LessThan` into `super`.
+
+### `PriorityQueue.remove` has been removed (GITHUB#15493)
+
+`remove` did a linear identity scan, not `equals`
+([GITHUB#15309](https://github.com/apache/lucene/issues/15309),
+[GITHUB#15493](https://github.com/apache/lucene/pull/15493)). Implement it on a
+subclass if you still need it (`getHeapArray`, `size`, `upHeap`, and `downHeap`
+stay protected).
+
+### `CollectionUtil.newHashMap` / `newHashSet` have been removed (GITHUB#15517)
+
+Use `HashMap.newHashMap` / `HashSet.newHashSet`.
+
+### Two-arg `Operations.concatenate` / `union` have been removed (GITHUB#15762)
+
+`Operations.concatenate(Automaton, Automaton)` and
+`Operations.union(Automaton, Automaton)` were removed (deprecated in 10.2,
+[GITHUB#14209](https://github.com/apache/lucene/pull/14209)). Use the
+`List` / `Collection` overloads, e.g. `Operations.union(List.of(a, b))`.
+
+### Cheap reader getters no longer throw `IOException` (GITHUB#16057)
+
+[GITHUB#16052](https://github.com/apache/lucene/issues/16052) /
+[GITHUB#16057](https://github.com/apache/lucene/pull/16057) /
+[GITHUB#16059](https://github.com/apache/lucene/pull/16059) /
+[GITHUB#16060](https://github.com/apache/lucene/pull/16060): `LeafReader.terms`
+/ `getPointValues` / `getDocValuesSkipper`, `Fields.terms`,
+`Terms.getSumTotalTermFreq` / `getSumDocFreq` / `getDocCount`, and
+`PointValues` min/max/dimension getters no longer throw. Overrides must drop
+`throws IOException`. Remaining I/O inside those getters should be wrapped as
+`UncheckedIOException`.
+
+### `LRUQueryCache.clearCoreCacheKey` now takes `CacheKey` (GITHUB#15558)
+
+[GITHUB#15558](https://github.com/apache/lucene/pull/15558)
+([GITHUB#14222](https://github.com/apache/lucene/issues/14222)) partitions the
+query cache; keys are `(query, segment)`. `clearCoreCacheKey` takes
+`IndexReader.CacheKey` instead of `Object`. The old `onQueryCache` /
+`onDocIdSetCache` / eviction hooks still compile but now fire once per
+`(segment, query)` entry. Prefer `onCacheEntryInserted` /
+`onCacheEntryEvicted`.
+
+### `checkIntegrity` now takes `MergePolicy.OneMerge` (GITHUB#16281)
+
+Codec `checkIntegrity()` on `DocValuesProducer`, `FieldsProducer`,
+`KnnVectorsReader` / `FlatVectorsReader`, `StoredFieldsReader`,
+`PostingsReaderBase`, and `PointsReader` is now
+`checkIntegrity(MergePolicy.OneMerge)` so checksums can abort with the merge.
+Pass `null` when there is no merge. `LeafReader.checkIntegrity()` is still
+no-arg.
+
+### `PerFieldKnnVectorsFormat.FieldsReader` is hidden (GITHUB#15187)
+
+`FieldsReader` is no longer a public type. Use
+`KnnVectorsReader.unwrapReaderForField(String)` (default: `return this`)
+instead of `instanceof FieldsReader` + `getFieldReader`.
+
+### `ScorerSupplier.cost()` throws `IOException` (GITHUB#16519)
+
+Overrides that wrap another supplier must declare `throws IOException`.
+
+### `ScorerSupplier.setTopLevelScoringClause` no longer throws (GITHUB#14291)
+
+Drop `throws IOException` from overrides. `cost()` still throws (separate
+change).
+
+### `IndexInput.prefetch` returns `boolean` (GITHUB#15627)
+
+[GITHUB#15627](https://github.com/apache/lucene/pull/15627)
+([GITHUB#15515](https://github.com/apache/lucene/issues/15515)):
+`IndexInput.prefetch` / `RandomAccessInput.prefetch` return `true` when
+something was actually prefetched (callers can defer the read). The default
+implementation returns `false` (no-op). Overrides must return that flag.
+
+### `CheckedIntConsumer` renamed to `IOIntConsumer` (GITHUB#14973)
+
+`org.apache.lucene.search.CheckedIntConsumer` is now
+`org.apache.lucene.util.IOIntConsumer`.
+
+### IEEE FLOAT16 vector APIs (GITHUB#16383)
+
+`LeafReader.getFloat16VectorValues` is abstract (`FilterLeafReader` already
+delegates). `KnnVectorsReader` / `FlatVectorsReader` /
+`FlatVectorsScorer` gained `getFloat16VectorValues`, `search(short[])`, and
+`getRandomVectorScorer(..., short[])`. Custom readers and exhaustive
+`VectorEncoding` switches need a `FLOAT16` arm.
+
+### `DictionaryCompoundWordTokenFilter` constructor change (GITHUB#14356)
+
+The constructor that took `onlyLongestMatch` plus `reuseChars` is gone
+([GITHUB#14311](https://github.com/apache/lucene/pull/14311),
+[GITHUB#14356](https://github.com/apache/lucene/pull/14356)). Remaining
+constructors are `(TokenStream, CharArraySet)` and
+`(TokenStream, CharArraySet, minWordSize, minSubwordSize, maxSubwordSize,
+onlyLongestMatchIgnoreSubwords)`. Super always gets `onlyLongestMatch=false`.
+The new flag is roughly old `onlyLongestMatch=true` + `reuseChars=false`.
+
+### `BitDocIdSet.bits()` has been removed (GITHUB#14297)
+
+[GITHUB#14290](https://github.com/apache/lucene/pull/14290) removed
+`DocIdSet.bits()`; [GITHUB#14297](https://github.com/apache/lucene/pull/14297)
+dropped `BitDocIdSet.bits()`. The method was redundant (wrap a `BitSet`, then
+unwrap it). Use `BitSet.of(...)` directly.
+
+### `HnswConcurrentMergeBuilder` dropped `maxConn` (GITHUB#15184)
+
+The constructor is now
+`(TaskExecutor, numWorkers, scorerSupplier, beamWidth, hnsw, initializedNodes)`.
+`OnHeapHnswGraph` already has `maxConn`.
 
 ## Migration from Lucene 10.4 to Lucene 10.5
 
@@ -288,7 +416,7 @@ recommended when upgrading.
 
 ### Snowball dependency upgrade
 
-Snowball has folded the "German2" stemmer into their "German" stemmer, so there's no "German2" anymore. For Lucene APIs (TokenFilter, TokenFilterFactory) that accept String, "German2" will be mapped to "German" to avoid breaking users. If you were previously creating German2Stemmer instances, you'll need to change your code to create GermanStemmer instances instead. For more information see <https://snowballstem.org/algorithms/german2/stemmer.html>
+Snowball has folded the "German2" stemmer into their "German" stemmer, so there's no "German2" anymore. For Lucene APIs (TokenFilter, TokenFilterFactory) that accept String, "German2" will be mapped to "German" to avoid breaking users. If you were previously creating German2Stemmer instances, you'll need to change your code to create GermanStemmer instances instead. For more information see
 
 ### Romanian analysis
 
@@ -584,17 +712,17 @@ All binary analysis packages (and corresponding Maven artifacts) have been renam
 now consistent with repository module `analysis`. You will need to adjust build dependencies
 to the new coordinates:
 
-|         Old Artifact Coordinates            |        New Artifact Coordinates            |
+| Old Artifact Coordinates | New Artifact Coordinates |
 |---------------------------------------------|--------------------------------------------|
-|org.apache.lucene:lucene-analyzers-common    |org.apache.lucene:lucene-analysis-common    |
-|org.apache.lucene:lucene-analyzers-icu       |org.apache.lucene:lucene-analysis-icu       |
-|org.apache.lucene:lucene-analyzers-kuromoji  |org.apache.lucene:lucene-analysis-kuromoji  |
+|org.apache.lucene:lucene-analyzers-common |org.apache.lucene:lucene-analysis-common |
+|org.apache.lucene:lucene-analyzers-icu |org.apache.lucene:lucene-analysis-icu |
+|org.apache.lucene:lucene-analyzers-kuromoji |org.apache.lucene:lucene-analysis-kuromoji |
 |org.apache.lucene:lucene-analyzers-morfologik|org.apache.lucene:lucene-analysis-morfologik|
-|org.apache.lucene:lucene-analyzers-nori      |org.apache.lucene:lucene-analysis-nori      |
-|org.apache.lucene:lucene-analyzers-opennlp   |org.apache.lucene:lucene-analysis-opennlp   |
-|org.apache.lucene:lucene-analyzers-phonetic  |org.apache.lucene:lucene-analysis-phonetic  |
-|org.apache.lucene:lucene-analyzers-smartcn   |org.apache.lucene:lucene-analysis-smartcn   |
-|org.apache.lucene:lucene-analyzers-stempel   |org.apache.lucene:lucene-analysis-stempel   |
+|org.apache.lucene:lucene-analyzers-nori |org.apache.lucene:lucene-analysis-nori |
+|org.apache.lucene:lucene-analyzers-opennlp |org.apache.lucene:lucene-analysis-opennlp |
+|org.apache.lucene:lucene-analyzers-phonetic |org.apache.lucene:lucene-analysis-phonetic |
+|org.apache.lucene:lucene-analyzers-smartcn |org.apache.lucene:lucene-analysis-smartcn |
+|org.apache.lucene:lucene-analyzers-stempel |org.apache.lucene:lucene-analysis-stempel |
 
 ### LucenePackage class removed (LUCENE-10260)
 
@@ -623,13 +751,13 @@ is now set by the constructor of those classes.
 
 These packages in the `lucene-misc` module are renamed:
 
-|    Old Package Name      |       New Package Name        |
+| Old Package Name | New Package Name |
 |--------------------------|-------------------------------|
 |org.apache.lucene.document|org.apache.lucene.misc.document|
-|org.apache.lucene.index   |org.apache.lucene.misc.index   |
-|org.apache.lucene.search  |org.apache.lucene.misc.search  |
-|org.apache.lucene.store   |org.apache.lucene.misc.store   |
-|org.apache.lucene.util    |org.apache.lucene.misc.util    |
+|org.apache.lucene.index |org.apache.lucene.misc.index |
+|org.apache.lucene.search |org.apache.lucene.misc.search |
+|org.apache.lucene.store |org.apache.lucene.misc.store |
+|org.apache.lucene.util |org.apache.lucene.misc.util |
 
 The following classes were moved to the `lucene-core` module:
 
@@ -640,17 +768,17 @@ The following classes were moved to the `lucene-core` module:
 
 These packages in the `lucene-sandbox` module are renamed:
 
-|    Old Package Name      |       New Package Name           |
+| Old Package Name | New Package Name |
 |--------------------------|----------------------------------|
-|org.apache.lucene.codecs  |org.apache.lucene.sandbox.codecs  |
+|org.apache.lucene.codecs |org.apache.lucene.sandbox.codecs |
 |org.apache.lucene.document|org.apache.lucene.sandbox.document|
-|org.apache.lucene.search  |org.apache.lucene.sandbox.search  |
+|org.apache.lucene.search |org.apache.lucene.sandbox.search |
 
 ### Backward codecs are renamed (LUCENE-9318)
 
 These packages in the `lucene-backwards-codecs` module are renamed:
 
-|    Old Package Name    |       New Package Name          |
+| Old Package Name | New Package Name |
 |------------------------|---------------------------------|
 |org.apache.lucene.codecs|org.apache.lucene.backward_codecs|
 
@@ -664,7 +792,7 @@ the default stop tags returned by `JapaneseAnalyzer.getDefaultStopTags()` (i.e. 
 
 These packages in the `lucene-analysis-icu` module are renamed:
 
-|    Old Package Name       |       New Package Name       |
+| Old Package Name | New Package Name |
 |---------------------------|------------------------------|
 |org.apache.lucene.collation|org.apache.lucene.analysis.icu|
 
@@ -672,9 +800,9 @@ These packages in the `lucene-analysis-icu` module are renamed:
 
 Base analysis factories are moved to `lucene-core`, also their package names are renamed.
 
-|                Old Class Name                    |               New Class Name               |
+| Old Class Name | New Class Name |
 |--------------------------------------------------|--------------------------------------------|
-|org.apache.lucene.analysis.util.TokenizerFactory  |org.apache.lucene.analysis.TokenizerFactory |
+|org.apache.lucene.analysis.util.TokenizerFactory |org.apache.lucene.analysis.TokenizerFactory |
 |org.apache.lucene.analysis.util.CharFilterFactory |org.apache.lucene.analysis.CharFilterFactory|
 |org.apache.lucene.analysis.util.TokenFilterFactory|org.apache.lucene.analysis.TokenizerFactory |
 
@@ -915,7 +1043,7 @@ Most code should just require recompilation, though possibly requiring some adde
 ### TokenStreamComponents is now final
 
 Instead of overriding `TokenStreamComponents.setReader()` to customise analyzer
-initialisation, you should now pass a `Consumer<Reader>` instance to the
+initialisation, you should now pass a `Consumer ` instance to the
 `TokenStreamComponents` constructor.
 
 ### LowerCaseTokenizer and LowerCaseTokenizerFactory have been removed
@@ -1117,9 +1245,9 @@ Subclasses of `IndexSearcher` that call or override the `searchLeaf` method need
 
 ### Signature of static IndexSearch#slices method changed
 
-The static `IndexSearcher#slices(List<LeafReaderContext> leaves, int maxDocsPerSlice, int maxSegmentsPerSlice)`
+The static `IndexSearcher#slices(List leaves, int maxDocsPerSlice, int maxSegmentsPerSlice)`
 method now supports an additional 4th and last argument to optionally enable creating segment partitions:
-`IndexSearcher#slices(List<LeafReaderContext> leaves, int maxDocsPerSlice, int maxSegmentsPerSlice, boolean allowSegmentPartitions)`
+`IndexSearcher#slices(List leaves, int maxDocsPerSlice, int maxSegmentsPerSlice, boolean allowSegmentPartitions)`
 
 ### TotalHitCountCollectorManager constructor
 
@@ -1127,9 +1255,9 @@ method now supports an additional 4th and last argument to optionally enable cre
 is provided to its constructor. Depending on whether segment partitions are present among slices, the manager can
 optimize the type of collectors it creates and exposes via `newCollector`.
 
-### `IndexSearcher#search(List<LeafReaderContext>, Weight, Collector)` removed
+### `IndexSearcher#search(List, Weight, Collector)` removed
 
-The protected `IndexSearcher#search(List<LeafReaderContext> leaves, Weight weight, Collector collector)` method has been
+The protected `IndexSearcher#search(List leaves, Weight weight, Collector collector)` method has been
 removed in favour of the newly introduced `search(LeafReaderContextPartition[] partitions, Weight weight, Collector collector)`.
 `IndexSearcher` subclasses that override this method need to instead override the new method.
 
