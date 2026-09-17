@@ -26,7 +26,7 @@ library versions.
 
 ### Security Manager support has been removed (GITHUB#14801)
 
-All Security Manager and `java.security` related code is gone. That machinery is
+All Security Manager and `java.security` related code has been removed. That machinery is
 effectively dead on Java 24+. Drop any `java.security.manager` flags or policy
 files that existed only for Lucene.
 
@@ -554,7 +554,7 @@ switch (fieldInfo.getVectorEncoding()) {
 
 ### `DictionaryCompoundWordTokenFilter` constructor change (GITHUB#14356)
 
-The constructor that took `onlyLongestMatch` plus `reuseChars` is gone
+The constructor that took `onlyLongestMatch` plus `reuseChars` has been removed
 ([GITHUB#14311](https://github.com/apache/lucene/pull/14311),
 [GITHUB#14356](https://github.com/apache/lucene/pull/14356)). Remaining
 constructors are `(TokenStream, CharArraySet)` and
@@ -653,7 +653,7 @@ org.apache.lucene.backward_codecs.store.GroupVIntUtil.readGroupVInts(in, longDst
 
 ### Deprecated CheckIndex parameters have been removed (GITHUB#11023)
 
-The old `-fast` CLI flag is gone. Use `-level` (`1`-`3`; default `1`) to
+The old `-fast` CLI flag has been removed. Use `-level` (`1`-`3`; default `1`) to
 choose how thorough the check is.
 
 ## Migration from Lucene 10.4 to Lucene 10.5
@@ -771,12 +771,11 @@ These classes no longer take a `determinizeWorkLimit` and no longer determinize
 behind the scenes. It is the responsibility of the caller to call
 `Operations.determinize()` for DFA execution.
 
-### RegExp optional complement syntax has been deprecated (LUCENE-11)
+### RegExp optional complement syntax has been deprecated
 
-Support for the optional complement syntax (`~`) was deprecated in Lucene 10
-and is removed in Lucene 11. In 10.x, prefer complement bracket expressions
-(`[^...]`) instead of `~`. For example, `[^fo]` matches any character that is
-not an `f` or `o`.
+The optional complement syntax (`~`) is deprecated. Prefer complement bracket
+expressions (`[^...]`) instead. For example, `[^fo]` matches any character that
+is not an `f` or `o`.
 
 ### DocValuesFieldExistsQuery, NormsFieldExistsQuery and KnnVectorFieldExistsQuery removed in favor of FieldExistsQuery (LUCENE-10436)
 
