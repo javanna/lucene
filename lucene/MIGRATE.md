@@ -302,17 +302,11 @@ public SimScorer scorer(float boost, FieldStats fieldStats, TermStats... termSta
 
 ### RegExp optional complement syntax has been removed (GITHUB#15750)
 
-The `~` complement syntax (`RegExp.DEPRECATED_COMPLEMENT`) was deprecated in
-Lucene 10 and removed in 11. Use a character-class negation (`[^...]`) instead.
-`RegExp.ALL` no longer includes that flag.
-
-```java
-// Before: optional complement of "fo"
-String re = "~(fo)";
-
-// After: any character that is not f or o
-String re = "[^fo]";
-```
+The `~` complement syntax (`RegExp.DEPRECATED_COMPLEMENT` int flag and
+`RegExp.Kind.REGEXP_DEPRECATED_COMPLEMENT` enum value) was deprecated in Lucene
+10 and removed in 11. `RegExp.ALL` no longer includes that flag. Prefer
+complement bracket expressions (`[^...]`) instead; for example, `[^fo]` matches
+any character that is not an `f` or `o`.
 
 ### `PriorityQueue` now takes a `LessThan` (GITHUB#14873)
 
@@ -560,7 +554,10 @@ The constructor that took `onlyLongestMatch` plus `reuseChars` has been removed
 constructors are `(TokenStream, CharArraySet)` and
 `(TokenStream, CharArraySet, minWordSize, minSubwordSize, maxSubwordSize,
 onlyLongestMatchIgnoreSubwords)`. Super always gets `onlyLongestMatch=false`.
-The new flag is roughly old `onlyLongestMatch=true` + `reuseChars=false`.
+The new flag is roughly old `onlyLongestMatch=true` + `reuseChars=false`, but
+also advances the token position past matched subword tokens. Code that is
+sensitive to token positions (phrase queries, span queries, highlighters) may
+see different results.
 
 ```java
 // Before
