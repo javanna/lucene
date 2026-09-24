@@ -4049,7 +4049,9 @@ public class TestIndexWriter extends LuceneTestCase {
     e =
         expectThrows(
             IllegalArgumentException.class,
-            () -> new IndexWriterConfig().setIndexCreatedVersionMajor(Version.MIN_SUPPORTED_MAJOR - 1));
+            () ->
+                new IndexWriterConfig()
+                    .setIndexCreatedVersionMajor(Version.MIN_SUPPORTED_MAJOR - 1));
     assertEquals(
         "indexCreatedVersionMajor may not be less than the minimum supported version: "
             + (Version.MIN_SUPPORTED_MAJOR)
@@ -4060,7 +4062,9 @@ public class TestIndexWriter extends LuceneTestCase {
     for (int previousMajor = Version.MIN_SUPPORTED_MAJOR;
         previousMajor <= Version.LATEST.major;
         previousMajor++) {
-      for (int newMajor = Version.MIN_SUPPORTED_MAJOR; newMajor <= Version.LATEST.major; newMajor++) {
+      for (int newMajor = Version.MIN_SUPPORTED_MAJOR;
+          newMajor <= Version.LATEST.major;
+          newMajor++) {
         for (OpenMode openMode : OpenMode.values()) {
           try (Directory dir = newDirectory()) {
             try (IndexWriter w =
