@@ -193,10 +193,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
               + ", but got: "
               + indexCreatedVersionMajor);
     }
-    if (indexCreatedVersionMajor < Version.LATEST.major - 1) {
+    if (indexCreatedVersionMajor < Version.MIN_SUPPORTED_MAJOR) {
       throw new IllegalArgumentException(
           "indexCreatedVersionMajor may not be less than the minimum supported version: "
-              + (Version.LATEST.major - 1)
+              + (Version.MIN_SUPPORTED_MAJOR)
               + ", but got: "
               + indexCreatedVersionMajor);
     }
