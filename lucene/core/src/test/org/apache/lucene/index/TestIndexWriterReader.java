@@ -50,7 +50,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
 
 @SuppressCodecs("SimpleText") // too slow here
 public class TestIndexWriterReader extends LuceneTestCase {
@@ -1307,8 +1306,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     {
       List<IndexCommit> commits = DirectoryReader.listCommits(dir);
       IndexCommit latestCommit = commits.get(commits.size() - 1);
-      try (DirectoryReader reader =
-          DirectoryReader.open(latestCommit, Version.MIN_SUPPORTED_MAJOR, leafSorter)) {
+      try (DirectoryReader reader = DirectoryReader.open(latestCommit, leafSorter)) {
         assertLeavesSorted(reader, leafSorter);
 
         // add more documents that should be sorted first

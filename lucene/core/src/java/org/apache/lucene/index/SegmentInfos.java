@@ -283,8 +283,24 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   /**
+   * Read a particular segmentFileName.
+   *
+   * @deprecated The {@code minSupportedMajorVersion} argument is ignored. Use {@link
+   *     #readCommit(Directory, String)} instead.
+   */
+  @Deprecated
+  public static SegmentInfos readCommit(
+      Directory directory, String segmentFileName, int minSupportedMajorVersion)
+      throws IOException {
+    return readCommit(directory, segmentFileName);
+  }
+
+  /**
    * Read a particular segmentFileName. Note that this may throw an IOException if a commit is in
    * process.
+   *
+   * <p>The commit must have been written by Lucene 7.4 or later, every segment must record a {@link
+   * SegmentInfo#getMinVersion() minVersion}, and that segment's codec must be available via SPI.
    *
    * @param directory -- directory containing the segments file
    * @param segmentFileName -- segment file to load
@@ -293,25 +309,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    */
   public static SegmentInfos readCommit(Directory directory, String segmentFileName)
       throws IOException {
-    return readCommit(directory, segmentFileName, Version.MIN_SUPPORTED_MAJOR);
-  }
-
-  /**
-   * Read a particular segmentFileName, as long as each segment's {@link
-   * SegmentInfo#getMinVersion()} within the commit is strictly greater than the provided minimum
-   * supported major version. If the commit's version is older, an {@link
-   * IndexFormatTooOldException} will be thrown. Note that this may throw an IOException if a commit
-   * is in process.
-   */
-  public static SegmentInfos readCommit(
-      Directory directory, String segmentFileName, int minSupportedMajorVersion)
-      throws IOException {
-
     long generation = generationFromSegmentsFileName(segmentFileName);
     // System.out.println(Thread.currentThread() + ": SegmentInfos.readCommit " + segmentFileName);
     try (ChecksumIndexInput input = directory.openChecksumInput(segmentFileName)) {
       try {
-        return readCommit(directory, input, generation, minSupportedMajorVersion);
+        return readCommit(directory, input, generation);
       } catch (EOFException | NoSuchFileException | FileNotFoundException e) {
         throw new CorruptIndexException(
             "Unexpected file read error while reading index.", input, e);
@@ -319,16 +321,22 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
-  /** Read the commit from the provided {@link ChecksumIndexInput}. */
+  /**
+   * Read the commit from the provided {@link ChecksumIndexInput}.
+   *
+   * @deprecated The {@code minSupportedMajorVersion} argument is ignored. Use {@link
+   *     #readCommit(Directory, ChecksumIndexInput, long)} instead.
+   */
+  @Deprecated
   public static SegmentInfos readCommit(
-      Directory directory, ChecksumIndexInput input, long generation) throws IOException {
-    return readCommit(directory, input, generation, Version.MIN_SUPPORTED_MAJOR);
+      Directory directory, ChecksumIndexInput input, long generation, int minSupportedMajorVersion)
+      throws IOException {
+    return readCommit(directory, input, generation);
   }
 
   /** Read the commit from the provided {@link ChecksumIndexInput}. */
   public static SegmentInfos readCommit(
-      Directory directory, ChecksumIndexInput input, long generation, int minSupportedMajorVersion)
-      throws IOException {
+      Directory directory, ChecksumIndexInput input, long generation) throws IOException {
     Throwable priorE = null;
     int format = -1;
     try {
@@ -362,7 +370,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       infos.generation = generation;
       infos.lastGeneration = generation;
       infos.luceneVersion = luceneVersion;
-      parseSegmentInfos(directory, input, infos, format, minSupportedMajorVersion);
+      parseSegmentInfos(directory, input, infos, format);
       return infos;
 
     } catch (Throwable t) {
@@ -378,12 +386,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   private static void parseSegmentInfos(
-      Directory directory,
-      DataInput input,
-      SegmentInfos infos,
-      int format,
-      int minSupportedMajorVersion)
-      throws IOException {
+      Directory directory, DataInput input, SegmentInfos infos, int format) throws IOException {
     infos.version = CodecUtil.readBELong(input);
     // System.out.println("READ sis version=" + infos.version);
     infos.counter = input.readVLong();
@@ -520,28 +523,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             input);
       }
 
-      int createdOrSegmentMinVersion =
-          info.getMinVersion() == null
-              ? infos.indexCreatedVersionMajor
-              : info.getMinVersion().major;
-
-      // version >=7 are expected to record minVersion
-      if (info.getMinVersion() == null || info.getMinVersion().major < minSupportedMajorVersion) {
+      if (info.getMinVersion() == null) {
         throw new IndexFormatTooOldException(
-            input,
-            "Index has segments derived from Lucene version "
-                + createdOrSegmentMinVersion
-                + ".x and is not supported by Lucene "
-                + Version.LATEST
-                + ". This Lucene version only supports indexes with major version "
-                + minSupportedMajorVersion
-                + " or later (found: "
-                + createdOrSegmentMinVersion
-                + ", minimum supported: "
-                + minSupportedMajorVersion
-                + "). To resolve this issue re-index your data using Lucene "
-                + minSupportedMajorVersion
-                + ".x or later.");
+            input, "Segment " + info + " is unsupported because it does not record a minVersion");
       }
     }
 
@@ -577,23 +561,30 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
-  /** Find the latest commit ({@code segments_N file}) and load all {@link SegmentCommitInfo}s. */
-  public static SegmentInfos readLatestCommit(Directory directory) throws IOException {
-    return readLatestCommit(directory, Version.MIN_SUPPORTED_MAJOR);
+  /**
+   * Find the latest commit ({@code segments_N file}) and load all {@link SegmentCommitInfo}s.
+   *
+   * @param minSupportedMajorVersion ignored
+   * @deprecated The {@code minSupportedMajorVersion} argument is ignored. Use {@link
+   *     #readLatestCommit(Directory)} instead.
+   */
+  @Deprecated
+  public static SegmentInfos readLatestCommit(Directory directory, int minSupportedMajorVersion)
+      throws IOException {
+    return readLatestCommit(directory);
   }
 
   /**
-   * Find the latest commit ({@code segments_N file}) and load all {@link SegmentCommitInfo}s, as
-   * long as the commit's {@link SegmentInfos#getIndexCreatedVersionMajor()} is strictly greater
-   * than the provided minimum supported major version. If the commit's version is older, an {@link
-   * IndexFormatTooOldException} will be thrown.
+   * Find the latest commit ({@code segments_N file}) and load all {@link SegmentCommitInfo}s.
+   *
+   * <p>The commit must have been written by Lucene 7.4 or later, every segment must record a {@link
+   * SegmentInfo#getMinVersion() minVersion}, and that segment's codec must be available via SPI.
    */
-  public static SegmentInfos readLatestCommit(Directory directory, int minSupportedMajorVersion)
-      throws IOException {
+  public static SegmentInfos readLatestCommit(Directory directory) throws IOException {
     return new FindSegmentsFile<SegmentInfos>(directory) {
       @Override
       protected SegmentInfos doBody(String segmentFileName) throws IOException {
-        return readCommit(directory, segmentFileName, minSupportedMajorVersion);
+        return readCommit(directory, segmentFileName);
       }
     }.run();
   }

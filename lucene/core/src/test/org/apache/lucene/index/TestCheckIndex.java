@@ -329,8 +329,7 @@ public class TestCheckIndex extends BaseTestCheckIndex {
             expectThrows(
                 CorruptSegmentInfoException.class,
                 () ->
-                    SegmentInfos.readCommit(
-                        dir, SegmentInfos.getLastCommitSegmentsFileName(dir), 0));
+                    SegmentInfos.readCommit(dir, SegmentInfos.getLastCommitSegmentsFileName(dir)));
         assertEquals(corruption, "_1", e.getSegmentName());
         // the root cause must be the codec's own failure, since that is what names the file on disk
         Throwable cause = e.getCause();

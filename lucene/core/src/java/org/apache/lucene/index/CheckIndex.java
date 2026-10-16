@@ -677,7 +677,7 @@ public final class CheckIndex implements Closeable {
         // Do not use SegmentInfos.read(Directory) since the spooky
         // retrying it does is not necessary here (we hold the write lock):
         // always open old indices if codecs are around
-        infos = SegmentInfos.readCommit(dir, fileName, 0);
+        infos = SegmentInfos.readCommit(dir, fileName);
       } catch (Throwable t) {
         if (failFast) {
           throw IOUtils.rethrowAlways(t);

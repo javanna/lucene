@@ -41,8 +41,9 @@ import org.apache.lucene.util.Version;
 
 /**
  * Tests for the MIN_SUPPORTED_MAJOR backwards compatibility policy. Verifies that indexes created
- * with major version numbers >= MIN_SUPPORTED_MAJOR can be opened, while older indexes throw
- * IndexFormatTooOldException.
+ * with major version numbers >= MIN_SUPPORTED_MAJOR can be opened. Older indexes throw
+ * IndexFormatTooOldException when their codecs are unavailable or when segments do not record a
+ * minVersion.
  *
  * <p>This test uses the precreated index archives to validate the policy against real historical
  * indexes. The test automatically adapts when MIN_SUPPORTED_MAJOR changes by using the existing

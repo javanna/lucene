@@ -45,7 +45,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -65,7 +64,6 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectors;
@@ -259,7 +257,7 @@ public class TestBasicBackwardsCompatibility extends BackwardsCompatibilityTestB
     // QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     // Query query = parser.parse("handle:1");
     IndexCommit indexCommit = DirectoryReader.listCommits(dir).get(0);
-    IndexReader reader = DirectoryReader.open(indexCommit, null);
+    IndexReader reader = DirectoryReader.open(indexCommit);
     IndexSearcher searcher = newSearcher(reader);
 
     TestUtil.checkIndex(dir);
@@ -851,23 +849,6 @@ public class TestBasicBackwardsCompatibility extends BackwardsCompatibilityTestB
         "all SCIs should have an id now",
         si.asList().stream().filter(sci -> sci.getId() == null).findAny().orElse(null));
     targetDir.close();
-  }
-
-  public void testFailOpenOldIndex() throws IOException {
-    assumeFalse("doesn't work on current index", version.major == Version.LATEST.major);
-    IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
-    IndexFormatTooOldException ex =
-        expectThrows(
-            IndexFormatTooOldException.class,
-            () -> StandardDirectoryReader.open(commit, Version.LATEST.major, null));
-    assertTrue(
-        ex.getMessage()
-            .contains(
-                "This Lucene version only supports indexes with major version "
-                    + Version.LATEST.major
-                    + " or later"));
-    // now open with allowed min version
-    StandardDirectoryReader.open(commit, Version.MIN_SUPPORTED_MAJOR, null).close();
   }
 
   public void testOpenModeAndCreatedVersion() throws IOException {

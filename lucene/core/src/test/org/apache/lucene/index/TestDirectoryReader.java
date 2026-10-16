@@ -60,7 +60,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.lucene.util.Version;
 import org.junit.Assume;
 
 @LuceneTestCase.SuppressCodecs("SimpleText")
@@ -1192,20 +1191,6 @@ public class TestDirectoryReader extends LuceneTestCase {
     dir.close();
   }
 
-  public void testOpenWithInvalidMinCompatVersion() throws IOException {
-    try (Directory dir = newDirectory();
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
-      Document doc = new Document();
-      doc.add(newStringField("field1", "foobar", Field.Store.YES));
-      doc.add(newStringField("field2", "foobaz", Field.Store.YES));
-      writer.addDocument(doc);
-      writer.commit();
-      IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
-      expectThrows(IllegalArgumentException.class, () -> DirectoryReader.open(commit, -1, null));
-      DirectoryReader.open(commit, random().nextInt(Version.LATEST.major + 1), null).close();
-    }
-  }
-
   public void testOpenWithExecutorService() throws IOException {
     Directory dir = newDirectory();
     createMultiSegmentIndex(dir, 5);
@@ -1264,7 +1249,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     }
   }
 
-  public void testOpenCommitWithMinVersionAndExecutor() throws IOException {
+  public void testOpenCommitWithLeafSorterAndExecutor() throws IOException {
     Directory dir = newDirectory();
     createMultiSegmentIndex(dir, 3);
 
@@ -1274,8 +1259,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
     try (DirectoryReader baseReader = DirectoryReader.open(dir)) {
       IndexCommit commit = baseReader.getIndexCommit();
-      DirectoryReader reader =
-          DirectoryReader.open(commit, Version.MIN_SUPPORTED_MAJOR, sorter, executor);
+      DirectoryReader reader = DirectoryReader.open(commit, sorter, executor);
       assertNotNull(reader);
       assertEquals(baseReader.numDocs(), reader.numDocs());
       reader.close();

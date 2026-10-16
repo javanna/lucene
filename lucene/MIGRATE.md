@@ -188,6 +188,23 @@ Enhanced error messages will clearly indicate:
 - Whether the index creation version is below `MIN_SUPPORTED_MAJOR` (reindex required)
 - Whether segments are too old to read directly (sequential upgrade required)
 
+### DirectoryReader minSupportedMajorVersion is ignored
+
+`DirectoryReader.open(IndexCommit, int minSupportedMajorVersion, ...)` and the
+corresponding `SegmentInfos.readCommit` / `readLatestCommit` overloads no longer
+apply a caller-supplied major-version floor. The `int` argument is ignored.
+
+Use the regular open APIs instead:
+
+```java
+DirectoryReader.open(commit);
+DirectoryReader.open(commit, leafSorter);
+DirectoryReader.open(commit, leafSorter, executor);
+```
+
+A commit can be opened if it was written by Lucene 7.4 or later, every segment
+records a minVersion, and that segment's codec is available via SPI.
+
 ### TieredMergePolicy#setMaxMergeAtOnce removed
 
 This parameter has no replacement, TieredMergePolicy no longer bounds the

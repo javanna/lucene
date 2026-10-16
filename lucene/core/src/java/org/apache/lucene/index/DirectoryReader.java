@@ -32,7 +32,12 @@ import org.apache.lucene.store.Directory;
  * Directory}.
  *
  * <p>DirectoryReader instances are usually constructed with a call to one of the static <code>
- * open()</code> methods, e.g. {@link #open(Directory)}.
+ * open()</code> methods, e.g. {@link #open(Directory)}. A commit can be opened if it was written by
+ * Lucene 7.4 or later, every segment records a {@link SegmentInfo#getMinVersion() minVersion}, and
+ * that segment's codec is available via SPI. Users of this API must be aware that Lucene doesn't
+ * guarantee semantic compatibility for indices that rely on codecs which are not built into this
+ * version. All backwards compatibility aside from the file format is optional and applied on a best
+ * effort basis.
  *
  * <p>For efficiency, in this API documents are often referred to via <i>document numbers</i>,
  * non-negative integers which each name a unique document in the index. These document numbers are
@@ -167,17 +172,49 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
   }
 
   /**
-   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}. This method
-   * allows to open indices that were created with a Lucene version older than {@link
-   * org.apache.lucene.util.Version#MIN_SUPPORTED_MAJOR} provided that all codecs for this index are
-   * available in the classpath and the segment file format used was created with Lucene 7 or newer.
-   * Users of this API must be aware that Lucene doesn't guarantee semantic compatibility for
-   * indices created with versions older than {@link
-   * org.apache.lucene.util.Version#MIN_SUPPORTED_MAJOR}. All backwards compatibility aside from the
-   * file format is optional and applied on a best effort basis.
+   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}.
    *
    * @param commit the commit point to open
-   * @param minSupportedMajorVersion the minimum supported major index version
+   * @param minSupportedMajorVersion ignored
+   * @param leafSorter a comparator for sorting leaf readers
+   * @throws IOException if there is a low-level IO error
+   * @deprecated The {@code minSupportedMajorVersion} argument is ignored. Use {@link
+   *     #open(IndexCommit, Comparator)} instead. Older indexes can be opened through the regular
+   *     {@code open} methods when their codecs are available via SPI.
+   */
+  @Deprecated
+  public static DirectoryReader open(
+      final IndexCommit commit, int minSupportedMajorVersion, Comparator<LeafReader> leafSorter)
+      throws IOException {
+    return open(commit, leafSorter);
+  }
+
+  /**
+   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}.
+   *
+   * @param commit the commit point to open
+   * @param minSupportedMajorVersion ignored
+   * @param leafSorter a comparator for sorting leaf readers
+   * @param executorService used to open segment readers in parallel
+   * @throws IOException if there is a low-level IO error
+   * @deprecated The {@code minSupportedMajorVersion} argument is ignored. Use {@link
+   *     #open(IndexCommit, Comparator, ExecutorService)} instead. Older indexes can be opened
+   *     through the regular {@code open} methods when their codecs are available via SPI.
+   */
+  @Deprecated
+  public static DirectoryReader open(
+      final IndexCommit commit,
+      int minSupportedMajorVersion,
+      Comparator<LeafReader> leafSorter,
+      ExecutorService executorService)
+      throws IOException {
+    return open(commit, leafSorter, executorService);
+  }
+
+  /**
+   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}.
+   *
+   * @param commit the commit point to open
    * @param leafSorter a comparator for sorting leaf readers. Providing leafSorter is useful for
    *     indices on which it is expected to run many queries with particular sort criteria (e.g. for
    *     time-based indices, this is usually a descending sort on timestamp). In this case {@code
@@ -186,25 +223,15 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    *     through segments and segments' documents
    * @throws IOException if there is a low-level IO error
    */
-  public static DirectoryReader open(
-      final IndexCommit commit, int minSupportedMajorVersion, Comparator<LeafReader> leafSorter)
+  public static DirectoryReader open(final IndexCommit commit, Comparator<LeafReader> leafSorter)
       throws IOException {
-    return StandardDirectoryReader.open(
-        commit.getDirectory(), minSupportedMajorVersion, commit, leafSorter, null);
+    return StandardDirectoryReader.open(commit.getDirectory(), commit, leafSorter, null);
   }
 
   /**
-   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}. This method
-   * allows to open indices that were created with a Lucene version older than {@link
-   * org.apache.lucene.util.Version#MIN_SUPPORTED_MAJOR} provided that all codecs for this index are
-   * available in the classpath and the segment file format used was created with Lucene 7 or newer.
-   * Users of this API must be aware that Lucene doesn't guarantee semantic compatibility for
-   * indices created with versions older than {@link
-   * org.apache.lucene.util.Version#MIN_SUPPORTED_MAJOR}. All backwards compatibility aside from the
-   * file format is optional and applied on a best effort basis.
+   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}.
    *
    * @param commit the commit point to open
-   * @param minSupportedMajorVersion the minimum supported major index version
    * @param leafSorter a comparator for sorting leaf readers. Providing leafSorter is useful for
    *     indices on which it is expected to run many queries with particular sort criteria (e.g. for
    *     time-based indices, this is usually a descending sort on timestamp). In this case {@code
@@ -215,13 +242,9 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(
-      final IndexCommit commit,
-      int minSupportedMajorVersion,
-      Comparator<LeafReader> leafSorter,
-      ExecutorService executorService)
+      final IndexCommit commit, Comparator<LeafReader> leafSorter, ExecutorService executorService)
       throws IOException {
-    return StandardDirectoryReader.open(
-        commit.getDirectory(), minSupportedMajorVersion, commit, leafSorter, executorService);
+    return StandardDirectoryReader.open(commit.getDirectory(), commit, leafSorter, executorService);
   }
 
   /**
@@ -450,7 +473,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
     List<IndexCommit> commits = new ArrayList<>();
 
-    SegmentInfos latest = SegmentInfos.readLatestCommit(dir, 0);
+    SegmentInfos latest = SegmentInfos.readLatestCommit(dir);
     final long currentGen = latest.getGeneration();
 
     commits.add(new StandardDirectoryReader.ReaderCommit(null, latest, dir));
@@ -466,7 +489,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
         try {
           // IOException allowed to throw there, in case
           // segments_N is corrupt
-          sis = SegmentInfos.readCommit(dir, fileName, 0);
+          sis = SegmentInfos.readCommit(dir, fileName);
         } catch (FileNotFoundException | NoSuchFileException _) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth

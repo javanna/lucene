@@ -37,7 +37,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOFunction;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
 
 /** Default implementation of {@link DirectoryReader}. */
 public final class StandardDirectoryReader extends DirectoryReader {
@@ -70,29 +69,10 @@ public final class StandardDirectoryReader extends DirectoryReader {
       Comparator<LeafReader> leafSorter,
       ExecutorService executor)
       throws IOException {
-    return open(directory, Version.MIN_SUPPORTED_MAJOR, commit, leafSorter, executor);
-  }
-
-  /** called from DirectoryReader.open(...) methods */
-  static DirectoryReader open(
-      final Directory directory,
-      int minSupportedMajorVersion,
-      final IndexCommit commit,
-      Comparator<LeafReader> leafSorter,
-      ExecutorService executor)
-      throws IOException {
     return new SegmentInfos.FindSegmentsFile<DirectoryReader>(directory) {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
-        if (minSupportedMajorVersion > Version.LATEST.major || minSupportedMajorVersion < 0) {
-          throw new IllegalArgumentException(
-              "minSupportedMajorVersion must be positive and <= "
-                  + Version.LATEST.major
-                  + " but was: "
-                  + minSupportedMajorVersion);
-        }
-        SegmentInfos sis =
-            SegmentInfos.readCommit(directory, segmentFileName, minSupportedMajorVersion);
+        SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
         SegmentReader[] readers = createSegmentReaders(sis, null, executor);
         try {
           // This may throw CorruptIndexException if there are too many docs, so
